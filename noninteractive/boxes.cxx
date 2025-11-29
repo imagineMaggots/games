@@ -2,8 +2,15 @@
  * Prints random boxes in terminal
  */
 #include <iostream>
+// for reducing framerate
+#include <thread>
+#include <chrono>
+// rng
 #include <random>
+// operating system
 #include <windows.h>
+
+// some ansi colors
 #define red "\033[31m"
 #define yellow "\033[32m"
 #define green "\033[33m"
@@ -95,7 +102,6 @@ class object {
  */
 int main (void)// you could pass nothing OR you could tell the program, that you _are_ passing _nothing_
 {
-    std::system("cls");
     fputs("\e[?25l", stdout); /* hide the cursor */
 
     object obi;
@@ -151,8 +157,8 @@ int main (void)// you could pass nothing OR you could tell the program, that you
         // BOX SIZE
         int xr = rand() % 13;
         int yr = rand() % 7;
-        obi.setHeight(xr);
-        obi.setWidth(yr);
+        obi.setHeight(xr+3);
+        obi.setWidth(yr+3);
 
 
         // First logic here
@@ -174,33 +180,38 @@ int main (void)// you could pass nothing OR you could tell the program, that you
         }
 
 
+        int h = obi.getHeight();
+        int w = obi.getWidth();
+        std::string escapeSequence = "\x1B[";
+        // moving the cursor down to the x-position of the object
+        escapeSequence.append(std::to_string(obi.getX()));
+        escapeSequence.append("B\x1B[");
+        // moving the cursor right to the y-position of the object
+        escapeSequence.append(std::to_string(obi.getY()));
+        escapeSequence.append("C");
+        // handled by os
+        std::cout << escapeSequence;
 
+
+        // gotta reset by the amount of printed characters in line
+        std::string widthReset = "\x1B[";
+        widthReset.append(std::to_string(w));
+        widthReset.append("D");
 
         // fills the screen
-        for(int x = 0; x < rows; x++)
+        for(int x = 0; x < h; x++)
         {
-            for(int y = 0; y < columns; y++)
+            for(int y = 0; y < w; y++)
             {
-                int h = obi.getHeight();
-                int w = obi.getWidth();
-
-
-                // will print a symbol, if we're inside the specified columns (for the width of the column)
-                if(y >= obi.getY() && y < obi.getY() + w) {
-                    // will print a symbol, if we're inside the specified rows (for the height of the cell)
-                    if (x >= obi.getX() && x < obi.getX() + h) {
-                        obi.setFigure('~');
-                    }
-                }
-        /* NOTE: we're still resetting the whole screen everytime, which is unnecessary due to ANSI Cursor Controls and Erase Functions! */
-                // blankspace for outside the box
-                else {
-                    obi.setFigure(' ');
-                }
                 std::cout << obi.getFigure();
             }
-            std::cout << "\n";
+            std::cout << "\x1B[1B";
+            std::cout << widthReset; // see above
         }
+
+        // to do: apply frame rate
+        std::this_thread::sleep_for(std::chrono::seconds(1));
+        std::system("cls");
     }
     return 0;
 }
